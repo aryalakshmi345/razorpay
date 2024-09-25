@@ -6,7 +6,7 @@ const router = new express.Router()
 
 router.post('/orders',async(req,res)=>{
     
-        const razorpay = new Razorpay({
+        const razorpay =  new Razorpay({
             key_id: process.env.KEY_ID,
             key_secret: process.env.KEY_SECRET
         })

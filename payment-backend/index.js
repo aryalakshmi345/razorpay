@@ -2,6 +2,11 @@ const express = require('express');
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const Razorpay = require("razorpay")
+const PDFDocument = require('pdfkit');
+const fs = require('fs');
+const path = require('path');
+
+
 
 const app = express();
 const port = 5000;
@@ -67,6 +72,52 @@ app.get("/payment/:paymentId", async(req, res) => {
 })
 
 
-app.listen(port, () => {
+
+
+app.post('/generate-pdf', async (req, res) => {
+    const { paymentId } = req.body;
+    const razorpay = new Razorpay({
+        key_id: "rzp_test_YWob3NoKy2p5h6",
+        key_secret: "nj2K7ZzB4urofNjyb81FbqMr"
+    })
+  
+   
+      // Fetch payment details from Razorpay
+      try {
+        // Fetch payment details from Razorpay
+        const payment = await razorpay.payments.fetch(paymentId);
+    
+        // Generate PDF in memory using PDFKit
+        const doc = new PDFDocument();
+        
+        // Set response headers to indicate file download
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename=receipt-${paymentId}.pdf`);
+    
+        // Pipe the PDF directly to the response
+        doc.pipe(res);
+    
+        // Add content to the PDF
+        doc.fontSize(20).text('Payment Receipt', { align: 'center' });
+        doc.moveDown();
+        doc.fontSize(12).text(`Payment ID: ${payment.id}`);
+        doc.text(`Order ID: ${payment.order_id}`);
+        doc.text(`Amount: ₹${payment.amount / 100}`); // Razorpay stores amount in paise
+        doc.text(`Status: ${payment.status}`);
+        doc.text(`Method: ${payment.method}`);
+        doc.text(`Email: ${payment.email}`);
+        doc.text(`Contact: ${payment.contact}`);
+    
+        // Finalize the PDF and end the stream
+        doc.end();
+      } catch (error) {
+        console.error('Error fetching payment details:', error);
+        res.status(500).send('Error fetching payment details');
+      }
+    });
+      
+    
+
+  app.listen(port, () => {
     console.log(`server is running on ${port}`);
 })
